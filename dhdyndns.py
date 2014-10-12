@@ -108,7 +108,7 @@ new_record = dict(record=args.domain, type=RECORD_TYPE, value=args.ip, comment=a
 success, data = makeRequest(API_ADD_URL.format(key=args.key, **new_record))
 
 if not success:
-    print('Failed to add new record:', new_record)
+    print('Failed to add new record:', data, file=sys.stderr)
     sys.exit(1)
 
 if args.verbosity >= 1:
