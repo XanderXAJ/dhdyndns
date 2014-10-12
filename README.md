@@ -7,3 +7,9 @@ Run it by passing your [DreamHost API key](https://panel.dreamhost.com/?tree=hom
 ```
 dhdyndns.py 1234567890123456 example.com $(curl -s icanhazip.com)
 ```
+
+View the latest usage information by passing `-h`:
+```
+dhdyndns.py -h
+```
+
