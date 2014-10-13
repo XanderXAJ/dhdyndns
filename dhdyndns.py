@@ -72,7 +72,7 @@ if args.verbosity >= 2:
 current_record = next((record for record in records if record['record'] == args.domain and record['type'] == RECORD_TYPE), None)
 
 # If add has been specified, we do not require a record to currently exist
-# If there's no record and ass hasn't been specified, it's an error
+# If there's no record and add hasn't been specified, it's an error
 if not args.add and current_record == None:
     print('Matching record not found. Try -vv for more info.', file=sys.stderr)
     sys.exit(1)
