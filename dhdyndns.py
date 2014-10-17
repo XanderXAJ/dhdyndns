@@ -13,6 +13,7 @@ API_REMOVE_URL='https://api.dreamhost.com/?key={key}&format=json&cmd=dns-remove_
 API_ADD_URL='https://api.dreamhost.com/?key={key}&format=json&cmd=dns-add_record&record={record}&type={type}&value={value}&comment={comment}'
 
 CURL_ARGS=['curl', '-s', '--ciphers', 'RSA']
+CURL_INSECURE_ARGS=['-k']
 
 REQ_TIMEOUT=30000
 RECORD_TYPE='A'
@@ -21,7 +22,15 @@ RECORD_TYPE='A'
 
 def makeRequest(url):
     """Makes a request to the passed url"""
-    response = subprocess.check_output(CURL_ARGS + [url], timeout=REQ_TIMEOUT)
+    # Assemble curl command
+    curl_cmd = CURL_ARGS[:]
+    if args.insecure: curl_cmd += CURL_INSECURE_ARGS
+    curl_cmd += [url]
+
+    if args.verbosity >= 2:
+        print("command:", *curl_cmd)
+
+    response = subprocess.check_output(curl_cmd, timeout=REQ_TIMEOUT)
 
     if args.verbosity >= 2:
         print('Response from', url, ':', response)
@@ -39,6 +48,7 @@ parser.add_argument('ip', type=ipaddress.ip_address, help='IP to set the A recor
 parser.add_argument('-v', '--verbosity', action='count', default=0, help='Increases output verbosity; specify multiple times for more')
 parser.add_argument('-c', '--comment', default='Updated at {}'.format(datetime.datetime.now().isoformat()), help='Comment to add to record. Defaults to current date and time.')
 parser.add_argument('-a', '--add', action='store_true', help='Add record even if no equivalent exists')
+parser.add_argument('-k', '--insecure', action='store_true', help='Allows insecure SSL connections. Same as curl\'s -k. Try if command fails with exit status 60 and if you can accept risk.')
 args = parser.parse_args()
 
 if args.verbosity >= 1:
