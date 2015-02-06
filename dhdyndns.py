@@ -5,18 +5,36 @@ import argparse
 import datetime
 import ipaddress
 import json
-import subprocess
+import subprocess   # For calling curl
 import sys
+import urllib.parse # For URL-encoding parameters
 
-API_LIST_URL='https://api.dreamhost.com/?key={key}&format=json&cmd=dns-list_records'
-API_REMOVE_URL='https://api.dreamhost.com/?key={key}&format=json&cmd=dns-remove_record&record={record}&type={type}&value={value}'
-API_ADD_URL='https://api.dreamhost.com/?key={key}&format=json&cmd=dns-add_record&record={record}&type={type}&value={value}&comment={comment}'
+API_URL='https://api.dreamhost.com/'
+API_LIST_ARGS={'cmd': 'dns-list_records', 'format': 'json', 'key': '{key}'}
+API_REMOVE_ARGS={'cmd': 'dns-remove_record', 'format': 'json', 'key': '{key}', 'record': '{record}', 'type': '{type}', 'value': '{value}'}
+API_ADD_ARGS={'cmd': 'dns-add_record', 'format': 'json', 'key': '{key}', 'record': '{record}', 'type': '{type}', 'value': '{value}', 'comment': '{comment}'}
 
 CURL_ARGS=['curl', '-s', '--ciphers', 'RSA']
 CURL_INSECURE_ARGS=['-k']
 
 REQ_TIMEOUT=30000
 RECORD_TYPE='A'
+
+
+
+def makeUrl(base, params):
+    """
+    Returns a URL formed by adding the base to dict of params
+
+    The keys and values of params will be URL encoded before being appended.  The base will be untouched.
+    """
+    if params is None or len(params) == 0:
+        # No parameters, just return base URL
+        return base
+    else:
+        # Parameters included, return base, ?, URL-encoded parameters
+        return base + '?' + urllib.parse.urlencode(params)
+
 
 
 
@@ -66,7 +84,9 @@ if args.verbosity >= 1:
 
 
 # Get list of records
-success, records = makeRequest(API_LIST_URL.format(key=args.key))
+list_args = API_LIST_ARGS.copy()
+list_args.update({'key': args.key})
+success, records = makeRequest(makeUrl(API_URL, list_args))
 
 # Stop now if the request for current records fails
 if not success:
@@ -86,11 +106,11 @@ current_record = next((record for record in records if record['record'] == args.
 
 # This script does not require that the record to be updated already exists.
 # However, if there's no record and the add option hasn't been specified, it's an error.
-if not args.add and current_record == None:
+if current_record is None and not args.add:
     print('Matching record not found. Try -vv for more info.', file=sys.stderr)
     sys.exit(1)
 
-if current_record != None:
+if current_record is not None:
     if args.verbosity >= 1:
         print('Found record:', current_record)
 
@@ -105,7 +125,9 @@ if current_record != None:
         sys.exit(1)
 
     # The record we've found needs removing, remove it
-    success, data = makeRequest(API_REMOVE_URL.format(key=args.key, **current_record))
+    remove_args = API_REMOVE_ARGS.copy()
+    remove_args.update({'key': args.key, 'record': current_record['record'], 'type': current_record['type'], 'value': current_record['value']})
+    success, data = makeRequest(makeUrl(API_URL, remove_args))
 
     if not success:
         print('Failed to remove current record:', data, file=sys.stderr)
@@ -117,8 +139,10 @@ if current_record != None:
 
 
 # Add new record
-new_record = dict(record=args.domain, type=RECORD_TYPE, value=args.ip, comment=args.comment)
-success, data = makeRequest(API_ADD_URL.format(key=args.key, **new_record))
+new_record = {'record': args.domain, 'type': RECORD_TYPE, 'value': args.ip, 'comment': args.comment}
+add_args = API_ADD_ARGS.copy()
+add_args.update(dict(key=args.key, **new_record))
+success, data = makeRequest(makeUrl(API_URL, add_args))
 
 if not success:
     print('Failed to add new record:', data, file=sys.stderr)
