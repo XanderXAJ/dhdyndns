@@ -96,12 +96,12 @@ if current_record != None:
 
     # Only modify the record if it is editable
     if current_record['editable'] != '1':
-        print('Record is not editable', file=sys.stderr)
+        print('Record is not editable:', current_record, file=sys.stderr)
         sys.exit(1)
 
     # The record only needs modifying if the IP addresses differ
     if current_record['value'] == str(args.ip) and args.verbosity >= 1:
-        print('IP addresses match, no need to update', file=sys.stderr)
+        print('IP addresses match, no need to update:', current_record, file=sys.stderr)
         sys.exit(1)
 
     # The record we've found needs removing, remove it
