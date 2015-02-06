@@ -21,7 +21,13 @@ RECORD_TYPE='A'
 
 
 def makeRequest(url):
-    """Makes a request to the passed url"""
+    """
+    Makes a request to the passed url
+
+    This is made difficult by the fact that the DH API hangs if there are too many available
+    ciphers, therefore we limit ourselves to just one using curl.
+    There is a good chance this will need changing in the future.
+    """
     # Assemble curl command
     curl_cmd = CURL_ARGS[:]
     if args.insecure: curl_cmd += CURL_INSECURE_ARGS
@@ -60,9 +66,6 @@ if args.verbosity >= 1:
 
 
 # Get list of records
-# This is made difficult by the fact that the DH API hangs if there are too many available
-# ciphers.  So we limit ourselves to just one.  There is a good chance this will need changing
-# in the future.
 success, records = makeRequest(API_LIST_URL.format(key=args.key))
 
 # Stop now if the request for current records fails
@@ -78,11 +81,11 @@ if args.verbosity >= 2:
 
 
 
-# Does the record current exist, and is editable?  If so, remove it
+# Find if the record that is to be updated already exists
 current_record = next((record for record in records if record['record'] == args.domain and record['type'] == RECORD_TYPE), None)
 
-# If add has been specified, we do not require a record to currently exist
-# If there's no record and add hasn't been specified, it's an error
+# This script does not require that the record to be updated already exists.
+# However, if there's no record and the add option hasn't been specified, it's an error.
 if not args.add and current_record == None:
     print('Matching record not found. Try -vv for more info.', file=sys.stderr)
     sys.exit(1)
